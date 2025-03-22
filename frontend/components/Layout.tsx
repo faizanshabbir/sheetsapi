@@ -10,24 +10,50 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold">Sheets API Generator</h1>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <UserButton afterSignOutUrl="/"/>
-            </div>
+    <div className="layout">
+      <header>
+        <nav>
+          <div className="logo" onClick={() => router.push('/')}>
+            Sheets API Generator
           </div>
-        </div>
-      </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="nav-right">
+            <UserButton afterSignOutUrl="/"/>
+          </div>
+        </nav>
+      </header>
+
+      <main>
         {children}
       </main>
+
+      <style jsx>{`
+        .layout {
+          min-height: 100vh;
+        }
+        header {
+          background: white;
+          border-bottom: 1px solid #eaeaea;
+          margin-bottom: 2rem;
+        }
+        nav {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 1rem 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .logo {
+          font-size: 1.5rem;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        main {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 2rem;
+        }
+      `}</style>
     </div>
   );
 } 
