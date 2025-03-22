@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "main": "next.config.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@clerk/nextjs": "^6.12.8",
     "@types/node": "^22.10.10",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
