@@ -1,8 +1,16 @@
 import Layout from '../components/Layout';
 import { useRouter } from 'next/router';
+import { useAuth } from '@clerk/nextjs';
 
 export default function Dashboard() {
+  const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
+
+  // Redirect to home if not signed in
+  if (isLoaded && !isSignedIn) {
+    router.push('/');
+    return null;
+  }
 
   return (
     <Layout>

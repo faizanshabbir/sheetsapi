@@ -4,7 +4,10 @@ import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <ClerkProvider>
+    <ClerkProvider 
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
+    >
       <Component {...pageProps} />
     </ClerkProvider>
   );

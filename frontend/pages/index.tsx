@@ -1,6 +1,11 @@
 import Layout from '../components/Layout';
+import { SignInButton, useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/router';
 
 export default function Home() {
+  const { isSignedIn } = useAuth();
+  const router = useRouter();
+
   return (
     <Layout>
       <div className="container">
@@ -8,9 +13,20 @@ export default function Home() {
         <p>Create APIs from your Google Sheets with just a few clicks.</p>
         
         <div className="actions">
-          <a href="/dashboard" className="button">
-            Go to Dashboard
-          </a>
+          {isSignedIn ? (
+            <button 
+              className="button"
+              onClick={() => router.push('/dashboard')}
+            >
+              Go to Dashboard
+            </button>
+          ) : (
+            <SignInButton mode="modal">
+              <button className="button">
+                Sign In to Get Started
+              </button>
+            </SignInButton>
+          )}
         </div>
 
         <style jsx>{`
@@ -26,8 +42,11 @@ export default function Home() {
             padding: 0.8rem 1.5rem;
             background: #0070f3;
             color: white;
+            border: none;
             border-radius: 5px;
+            cursor: pointer;
             transition: background 0.2s;
+            font-size: 1rem;
           }
           .button:hover {
             background: #0051b3;
