@@ -1,0 +1,16 @@
+sheets-api-generator/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── models/
+│   │   └── services/
+│   ├── requirements.txt
+│   └── main.py
+├── frontend/
+│   ├── components/
+│   ├── pages/
+│   ├── public/
+│   ├── styles/
+│   └── utils/
+└── docker/ 

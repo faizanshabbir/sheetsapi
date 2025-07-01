@@ -1,12 +1,14 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
+import json
+import os
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Sheets API Generator"
     API_V1_STR: str = "/api/v1"
     
     # Security
-    SECRET_KEY: str
+    JWT_SECRET_KEY: str = os.environ["JWT_SECRET_KEY"]
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
@@ -17,14 +19,17 @@ class Settings(BaseSettings):
     ]
     
     # Google OAuth
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str
+    GOOGLE_CREDENTIALS: str = os.environ["GOOGLE_CREDENTIALS"]  # JSON string from service account key
     
     # Database
-    DATABASE_URL: str
-    
+    DATABASE_URL: str = os.environ["DATABASE_URL"]
+
+    @property
+    def google_credentials_dict(self) -> dict:
+        """Parse Google credentials JSON string into dict"""
+        return json.loads(self.GOOGLE_CREDENTIALS)
+
     class Config:
-        env_file = ".env"
+        env_file = None  # Disable .env file loading
 
 settings = Settings() 

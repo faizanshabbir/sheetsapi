@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import sheets
+from app.db.init_db import init_db
 
 app = FastAPI(
     title="Sheets API Generator",
@@ -16,6 +17,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 app.include_router(sheets.router, prefix="/api/v1")
 

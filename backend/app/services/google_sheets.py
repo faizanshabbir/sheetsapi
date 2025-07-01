@@ -2,17 +2,16 @@ import json
 import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+import re
+from app.core.config import settings
 
 class GoogleSheetsService:
     def __init__(self):
         SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
         
-        # Get credentials from environment variable
-        credentials_dict = json.loads(os.getenv('GOOGLE_CREDENTIALS'))
-        
         credentials = service_account.Credentials.from_service_account_info(
-            credentials_dict,
+            settings.google_credentials_dict,
             scopes=SCOPES
         )
         
@@ -40,3 +39,38 @@ class GoogleSheetsService:
             ]
         except Exception as e:
             raise Exception(f"Error fetching sheet data: {str(e)}")
+
+    @staticmethod
+    def extract_sheet_id(url: str) -> str:
+        """Extract the sheet ID from a Google Sheets URL."""
+        # Pattern for both old and new Google Sheets URLs
+        patterns = [
+            r"/spreadsheets/d/([a-zA-Z0-9-_]+)",
+            r"spreadsheet:([a-zA-Z0-9-_]+)",
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+                
+        raise ValueError("Invalid Google Sheets URL")
+
+    @staticmethod
+    def validate_sheet_access(sheet_id: str) -> bool:
+        """Validate if we can access the sheet."""
+        # TODO: Implement actual Google Sheets API validation
+        return True
+
+    async def get_raw_data(self, spreadsheet_id: str) -> List[List]:
+        """Get raw sheet data as list of lists"""
+        try:
+            sheet = self.service.spreadsheets()
+            result = sheet.values().get(
+                spreadsheetId=spreadsheet_id,
+                range="A1:Z1000"  # Default range
+            ).execute()
+            
+            return result.get('values', [])
+        except Exception as e:
+            raise Exception(f"Error fetching raw sheet data: {str(e)}")

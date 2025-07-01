@@ -1,10 +1,40 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
+from typing import List
+from pydantic import BaseModel
+from datetime import datetime
+import uuid
 from app.services.google_sheets import GoogleSheetsService
 from app.services.sheet_template import SheetValidator, SheetTemplate, SheetType
+from app.models.api_endpoint import APIEndpoint
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 
 router = APIRouter()
 sheets_service = GoogleSheetsService()
 validator = SheetValidator()
+
+# Helper functions (moved to top)
+async def log_request_body(request: Request):
+    body = await request.json()  # or request.body() for raw bytes
+    print("Request Body:", body)
+    return body
+
+async def log_request_query(request: Request):
+    query_params = request.query_params
+    print("Query Parameters:", query_params)
+    return query_params
+
+class SheetCreate(BaseModel):
+    sheet_url: str
+    name: str
+    sheet_range: str = "A1:Z1000"  # Default range
+
+class SheetResponse(BaseModel):
+    id: int
+    name: str
+    sheet_id: str
+    endpoint_path: str
+    created_at: datetime
 
 @router.get("/sheets/{sheet_id}")
 async def read_sheet(
@@ -80,3 +110,58 @@ async def validate_sheet(
 ):
     """Validates sheet against a specific template"""
     # Implementation for template validation
+
+@router.post("/sheets", response_model=SheetResponse)
+async def create_sheet_api(
+    sheet: SheetCreate,
+    db: Session = Depends(get_db)
+):
+    # Extract sheet ID from URL
+    try:
+        sheet_id = GoogleSheetsService.extract_sheet_id(sheet.sheet_url)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid Google Sheet URL")
+
+    # Generate unique endpoint ID
+    endpoint_id = str(uuid.uuid4())
+    endpoint_path = f"/api/v1/data/{endpoint_id}"
+
+    # Create new API endpoint with a default user_id for testing
+    db_endpoint = APIEndpoint(
+        user_id="test-user-123",  # Hardcoded for testing
+        name=sheet.name,
+        sheet_id=sheet_id,
+        sheet_range=sheet.sheet_range,
+        endpoint_path=endpoint_path
+    )
+    
+    db.add(db_endpoint)
+    db.commit()
+    db.refresh(db_endpoint)
+
+    return SheetResponse(
+        id=db_endpoint.id,
+        name=db_endpoint.name,
+        sheet_id=db_endpoint.sheet_id,
+        endpoint_path=db_endpoint.endpoint_path,
+        created_at=db_endpoint.created_at
+    )
+
+@router.get("/sheets", response_model=List[SheetResponse])
+async def get_sheets(db: Session = Depends(get_db)):
+    """Get all API endpoints (for testing - no user filtering)"""
+    try:
+        # For testing, get all sheets (no user filtering)
+        sheets = db.query(APIEndpoint).all()
+        
+        return [
+            SheetResponse(
+                id=sheet.id,
+                name=sheet.name,
+                sheet_id=sheet.sheet_id,
+                endpoint_path=sheet.endpoint_path,
+                created_at=sheet.created_at
+            ) for sheet in sheets
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
