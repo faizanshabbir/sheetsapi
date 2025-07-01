@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import sheets
+from app.api.endpoints import sheets, dynamic
 from app.db.init_db import init_db
 
 app = FastAPI(
@@ -23,6 +23,7 @@ def startup_event():
     init_db()
 
 app.include_router(sheets.router, prefix="/api/v1")
+app.include_router(dynamic.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
