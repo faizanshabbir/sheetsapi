@@ -4,6 +4,7 @@ from app.services.google_sheets import GoogleSheetsService
 from app.models.api_endpoint import APIEndpoint
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.api.deps import get_current_user
 
 router = APIRouter()
 sheets_service = GoogleSheetsService()
@@ -12,12 +13,16 @@ sheets_service = GoogleSheetsService()
 async def update_dynamic_rows_by_field(
     endpoint_id: str,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Update rows in the Google Sheet that match field criteria (SheetDB.io approach)"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")
@@ -64,12 +69,16 @@ async def update_dynamic_rows_by_field(
 async def delete_dynamic_rows_by_field(
     endpoint_id: str,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Delete rows from the Google Sheet that match field criteria (SheetDB.io approach)"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")
@@ -108,12 +117,16 @@ async def insert_dynamic_row_by_field(
     endpoint_id: str,
     row_data: Dict[str, Any],
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Insert a new row after rows that match field criteria (SheetDB.io approach)"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")

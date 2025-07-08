@@ -4,6 +4,7 @@ from app.services.google_sheets import GoogleSheetsService
 from app.models.api_endpoint import APIEndpoint
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.api.deps import get_current_user
 
 router = APIRouter()
 sheets_service = GoogleSheetsService()
@@ -16,12 +17,16 @@ async def get_dynamic_data(
     sort_by: Optional[str] = None,
     sort_order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     debug: Optional[bool] = Query(False, description="Show debug information"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Get data from a Google Sheet via dynamic endpoint"""
     try:
-        # 1. Look up the endpoint in database
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint in database and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")
@@ -109,12 +114,16 @@ async def create_dynamic_row(
     endpoint_id: str,
     row_data: Dict[str, Any],
     position: Optional[str] = Query("end", description="Insert position: 'beg', 'end', or row index number"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Add a new row to the Google Sheet"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")
@@ -142,12 +151,16 @@ async def update_dynamic_row(
     endpoint_id: str,
     row_id: str,
     row_data: Dict[str, Any],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Update a row in the Google Sheet"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")
@@ -181,12 +194,16 @@ async def update_dynamic_row(
 async def delete_dynamic_row(
     endpoint_id: str,
     row_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Delete a row from the Google Sheet"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")
@@ -217,12 +234,16 @@ async def delete_dynamic_row(
 @router.get("/data/{endpoint_id}/debug")
 async def debug_endpoint(
     endpoint_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Debug endpoint to check permissions and service account info"""
     try:
-        # 1. Look up the endpoint
-        api_endpoint = db.query(APIEndpoint).filter(APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}").first()
+        # 1. Look up the endpoint and verify ownership
+        api_endpoint = db.query(APIEndpoint).filter(
+            APIEndpoint.endpoint_path == f"/api/v1/data/{endpoint_id}",
+            APIEndpoint.user_id == current_user
+        ).first()
         
         if not api_endpoint:
             raise HTTPException(status_code=404, detail="API endpoint not found")

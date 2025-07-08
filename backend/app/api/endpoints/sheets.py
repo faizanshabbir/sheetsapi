@@ -8,6 +8,7 @@ from app.services.sheet_template import SheetValidator, SheetTemplate, SheetType
 from app.models.api_endpoint import APIEndpoint
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.api.deps import get_current_user
 
 router = APIRouter()
 sheets_service = GoogleSheetsService()
@@ -35,6 +36,25 @@ class SheetResponse(BaseModel):
     sheet_id: str
     endpoint_path: str
     created_at: datetime
+
+@router.get("/auth/debug")
+async def debug_auth(current_user: str = Depends(get_current_user)):
+    """Debug endpoint to test JWT authentication"""
+    return {
+        "message": "Authentication successful!",
+        "user_id": current_user,
+        "timestamp": datetime.now().isoformat(),
+        "status": "authenticated"
+    }
+
+@router.get("/auth/debug-no-auth")
+async def debug_no_auth():
+    """Debug endpoint without authentication for comparison"""
+    return {
+        "message": "No authentication required",
+        "timestamp": datetime.now().isoformat(),
+        "status": "unauthenticated"
+    }
 
 @router.get("/sheets/{sheet_id}")
 async def read_sheet(
@@ -114,7 +134,8 @@ async def validate_sheet(
 @router.post("/sheets", response_model=SheetResponse)
 async def create_sheet_api(
     sheet: SheetCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     # Extract sheet ID from URL
     try:
@@ -126,9 +147,9 @@ async def create_sheet_api(
     endpoint_id = str(uuid.uuid4())
     endpoint_path = f"/api/v1/data/{endpoint_id}"
 
-    # Create new API endpoint with a default user_id for testing
+    # Create new API endpoint with the actual user ID
     db_endpoint = APIEndpoint(
-        user_id="test-user-123",  # Hardcoded for testing
+        user_id=current_user,
         name=sheet.name,
         sheet_id=sheet_id,
         sheet_range=sheet.sheet_range,
@@ -148,11 +169,16 @@ async def create_sheet_api(
     )
 
 @router.get("/sheets", response_model=List[SheetResponse])
-async def get_sheets(db: Session = Depends(get_db)):
-    """Get all API endpoints (for testing - no user filtering)"""
+async def get_sheets(
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    """Get all API endpoints for the current user"""
     try:
-        # For testing, get all sheets (no user filtering)
-        sheets = db.query(APIEndpoint).all()
+        # Filter sheets by current user
+        sheets = db.query(APIEndpoint).filter(
+            APIEndpoint.user_id == current_user
+        ).all()
         
         return [
             SheetResponse(
